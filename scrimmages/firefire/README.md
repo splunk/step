@@ -1,5 +1,4 @@
-HELLO
-# Introduction<a id="orgheadline3"></a>
+# Introduction
 
 For this exercise, let's play around a bit with modular inputs and the new
 custom visualization capability that was added in Splunk 6.4.
@@ -9,18 +8,18 @@ online, and in some cases it's pretty interesting data. Let's make use of their
 API to retrieve incident response data from the Seattle Fire Department and
 visualize it on a map using a heatmap.
 
-## Plays we are practicing<a id="orgheadline1"></a>
+## Plays we are practicing
 
 -   Modular Input
 -   Modular Visualization
 
-## External technologies<a id="orgheadline2"></a>
+## External technologies
 
 -   [Leaflet](http://leafletjs.com/)
 -   [Leaflet.heat](https://github.com/Leaflet/Leaflet.heat)
 -   [D3](http://d3js.org)
 
-# Getting the Data<a id="orgheadline7"></a>
+# Getting the Data
 
 We start, as we often do, with getting the data into Splunk. In this case, we
 want to pull the data from a web service. Seattle's data portal is hosted by a
