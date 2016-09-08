@@ -1,0 +1,22 @@
+{
+  "name": "geoheatmap",
+  "version": "1.0.0",
+  "description": "Example heatmap example",
+  "main": "visualization.js",
+  "scripts": {
+    "build": "node ./node_modules/webpack/bin/webpack.js",
+    "devbuild": "node ./node_modules/webpack/bin/webpack.js --progress",
+    "watch": "node ./node_modules/webpack/bin/webpack.js -d --watch --progress"
+  },
+  "author": "Splunk Developer Guidance",
+  "license": "MIT",
+  "devDependencies": {
+    "webpack": "^1.12.6"
+  },
+  "dependencies": {
+    "jquery": "^2.2.0",
+    "underscore": "^1.8.3",
+    "leaflet": "1.0.0-rc.1",
+    "leaflet.heat": "^0.2.0"
+  }
+}

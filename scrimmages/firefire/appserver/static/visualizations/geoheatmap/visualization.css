@@ -1,0 +1,15 @@
+/*
+ * CSS rules for visualization.
+ * Class namespacing is good practice.
+ */
+
+@import url('./contrib/css/leaflet.css');
+.geoheatmap {
+    min-height: 102px;
+    min-width: 101px;
+}
+
+canvas, div.leaflet-pane {
+    min-width: 100px;
+    min-height: 100px;
+}

@@ -1,0 +1,50 @@
+<form class="splunk-formatter-section" section-label="Heatmap">
+    <div class="control-group">
+        <label class="control-label">Minimum Opacity</label>
+        <splunk-text-input name="display.visualizations.custom.firefire.geoheatmap.minOpacity" value="0.1"></splunk-text-input>
+        <span class="help-block">Opacity of each circle drawn (one per point)</span>
+    </div>
+    <div class="control-group">
+        <label class="control-label">Radius</label>
+        <splunk-text-input name="display.visualizations.custom.firefire.geoheatmap.radius" value="25"></splunk-text-input>
+        <span class="help-block">In pixels</span>
+    </div>
+    <div class="control-group">
+        <label class="control-label">Blur</label>
+        <splunk-text-input name="display.visualizations.custom.firefire.geoheatmap.blur value="15"></splunk-text-input>
+        <span class="help-block">In pixels</span>
+    </div>
+</form>
+
+<form class="splunk-formatter-section" section-label="Base Map">
+    <div class="control-group">
+        <label class="control-label">Base Map</label>
+        <splunk-select name="display.visualizations.custom.firefire.geoheatmap.basemap_design" value="positron">
+            <option value="positron">CartoDB Positron</option>
+            <option value="dark_matter">CartoDB Dark Matter</option>
+            <option value="toner">Stamen Toner</option>
+            <option value="watercolor">Stamen Watercolor</option>
+        </splunk-select>
+    </div>
+</form>
+
+<form class="splunk-formatter-section" section-label="Colors">
+    <div class="control-group">
+        <label class="control-label">Color 1</label>
+        <splunk-color-picker name="display.visualizations.custom.firefire.geoheatmap.color1" value="#65a640"></splunk-color-picker>
+        <splunk-text-input name="display.visualizations.custom.firefire.geoheatmap.colorstop1" value="0.4"></splunk-text-input>
+        <span class="help-block">blah blah</span>
+    </div>
+    <div class="control-group">
+        <label class="control-label">Color 2</label>
+        <splunk-color-picker name="display.visualizations.custom.firefire.geoheatmap.color2" value="#65a640"></splunk-color-picker>
+        <splunk-text-input name="display.visualizations.custom.firefire.geoheatmap.colorstop2" value="0.65"></splunk-text-input>
+        <span class="help-block">blah blah</span>
+    </div>
+    <div class="control-group">
+        <label class="control-label">Color 3</label>
+        <splunk-color-picker name="display.visualizations.custom.firefire.geoheatmap.color3" value="#65a640"></splunk-color-picker>
+        <splunk-text-input name="display.visualizations.custom.firefire.geoheatmap.colorstop3" value="1"></splunk-text-input>
+        <span class="help-block">blah blah</span>
+    </div>
+</form>

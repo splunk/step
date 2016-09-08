@@ -1,0 +1,15 @@
+<dashboard>
+  <label>Example Heatmap</label>
+  <row>
+    <panel>
+      <viz type="firefire.geoheatmap">
+        <option name="height">900px</option>
+        <search>
+          <query>source="socrata_feed://seattle_fire_response" | table latitude, longitude</query>
+          <!-- <earliest>-7d@h</earliest> -->
+          <!-- <latest>now</latest> -->
+        </search>
+      </viz>
+    </panel>
+  </row>
+</dashboard>

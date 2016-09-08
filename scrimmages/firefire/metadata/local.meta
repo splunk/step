@@ -1,0 +1,6 @@
+[views/example_heatmap]
+access = read : [ * ]
+export = none
+owner = admin
+version = 6.4.0
+modtime = 1470695364.763876000

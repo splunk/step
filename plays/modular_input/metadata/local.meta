@@ -1,0 +1,9 @@
+[inputs/hello%3A%2F%2Fhello_david]
+owner = admin
+version = 6.4.0
+modtime = 1473192267.719197000
+
+[inputs/hello%3A%2F%2Ffoobar]
+owner = admin
+version = 6.4.0
+modtime = 1473193806.460890000
