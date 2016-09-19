@@ -1,10 +1,9 @@
 # Introduction
 
-For this exercise, let's play around a bit with modular inputs and the new
-custom visualization capability that was added in Splunk 6.4.
+We can <<RBC: So, I took out the exercise language again and I was going to follow the rule and take out the contraction, but "Let us" sounds so stilted. So which is worse, break the rule or sound weird? I vote sounding weird is worse, but "let's" is specifically on their list to eliminate. I'm not particularly happy with this change. Suggestions?>> play around a bit with modular inputs and the <<RBC: FYI, there's a quirk in advertising law that things are only considered "new" for 6 months. I don't anyone would ever challenge us, but just in case I routinely remove that word.>> custom visualization capability that was added in Splunk Enterprise 6.4.
 
 The city of Seattle (and many other cities) have started putting their data
-online, and in some cases it's pretty interesting data. Let's make use of their
+online, and in some cases it's pretty interesting data. We can make use of their
 API to retrieve incident response data from the Seattle Fire Department and
 visualize it on a map using a heatmap.
 
@@ -19,35 +18,34 @@ visualize it on a map using a heatmap.
 -   [Leaflet.heat](https://github.com/Leaflet/Leaflet.heat)
 -   [D3](http://d3js.org)
 
-# Getting the Data
+# Getting the data
 
-We start, as we often do, with getting the data into Splunk. In this case, we
+We start, as we often do, with getting the data into Splunk Enterprise. In this case, we
 want to pull the data from a web service. Seattle's data portal is hosted by a
 company named[ Socrata](https://www.socrata.com/). Socrata offers several ways to obtain the data they
-serve- we are going to choose their SODA API.
+serve. We are going to choose their SODA API.
 
-When pulling data into Splunk we need to take a few things into consideration.
+When pulling data into Splunk Enterprise we need to take a few things into consideration.
 In this case the data is presented as a web service where we will need to
 periodically poll for new data. Most services don't supply a cursor, so we will
-have to figure out a suitable way to determine how to ask for only new data- we
+have to figure out a suitable way to determine how to ask for only new data. We
 don't want to add multiple copies of the same event into our indexes.
 
 The simplest and most straightforward way is to poll every $ x $ minutes and ask
 for the last $ x $ minutes of data. The problem is that this opens us up to a
-couple kinds of failures. If our scheduler isn't precise, we may start early and
-duplicate data. If we start late we miss data. Worst, there's no way to know if
-this happens! If the Splunk indexer we are running on is down for maintenance 
-or for this project you close your laptop and go home for the night, our input
+couple of kinds of failures. If our scheduler isn't precise, we may start early and
+duplicate data. If we start late we miss data. Worse, there's no way to know if
+this happens! If the Splunk Enterprise indexer we are running on is down for maintenance, 
+or while working through this exericse you close your laptop and go home for the night, our input
 won't know where to restart.
 
 Another way is to keep track of the last item we saw, and start there on the next
 polling cycle. That means that we need some way to keep track of where we are in
-the list between invocations.  In our data set we have an incident date- let's use
-that.  We can request all events and keep track of the time of the last one.  When
-we next make a request we will use that date as a minimum filter.  This scheme
-still isn't perfect- if data is added retroactively we will never see it.  There's
-also a possibility that if two events have the same time we will get the first one
-but skip the second if they split between our fetches. But for this case, both of 
+the list between invocations. <<RBC: Not sure if "invocations" is the best word to use here. When I search docs on Splunk, I only get 29 hits. That tells me it's not super common and we want to make sure that since this is potentially going to be used by newer Splunk users that we choose the most common terms possible. Sadly, I don't know what that word might be, but just something to think about.>> In our data set we have an incident date that we can use. We can request all events and keep track of the time of the last one we received. When 
+we next make a request we will use that date as a minimum filter. This scheme
+still isn't perfect. If data is added retroactively we will never see it. There's
+also a possibility that if two events have the same timestamp <<RBC: Okay technically, or was time sufficient?>> we will get the first one
+but not the second if they are split between our fetches. But for this exercise, both of 
 those seem to be pretty reasonable tradeoffs.
 
 ## Configuration for the input<a id="orgheadline4"></a>
@@ -61,10 +59,10 @@ which field in the data to use for that purpose. Finally, we will want to
 backfill so that we have some data to work with right away, so let's add a field
 to specify how far back to pull data from.
 
-In Splunk we define modular inputs in a file named `README/inputs.conf.spec`.
-Files with the extension `.conf.spec` tell Splunk how to parse and validate
-`.conf` files. They layer just like Splunk's conf files do. In this case, we are
-defining a new type of input, which we will then specify in `inputs.conf`.
+In Splunk Enterprise we define modular inputs in a file named `README/inputs.conf.spec`.
+Files with the extension `.conf.spec` tell Splunk Enterprise how to parse and validate
+`.conf` files. They <<RBC: What's the pronoun antecedent here? External conf files? Mod inputs? Or?>> layer just like Splunk Enterprise's conf files do. In this case, we are
+defining a new type of input that we will specify in `inputs.conf`.
 
 Our configuration looks like this:
 
@@ -76,7 +74,7 @@ Our configuration looks like this:
     default_checkpoint_date = <value>
     limit = <value>
 
-When we define an input, we use that stanza as a template- for example, here's
+When we define an input, we use that stanza as a template. For example, here is
 the stanza we will use to bring in response data from the Seattle Fire Department<sup><a id="fnr.1" class="footref" href="#fn.1">1</a></sup>:
 
     [socrata_feed://seattle_fire_response]
@@ -86,28 +84,28 @@ the stanza we will use to bring in response data from the Seattle Fire Departmen
     limit = 500
     url = https://data.seattle.gov/resource/grwu-wqtk.json
 
-That's enough for us- now we can specify several inputs if we want, and we have
-everything we need to pull the data. It's probably not enough for someone who
-hasn't been following along with us, however- we need to be able to supply a bit 
+Now we can specify several inputs if we want, and we have
+everything we need to pull the data. It is probably not enough for someone who
+has not been following along with us. We need to supply a bit 
 more detail on what we mean by 'date<sub>field</sub>', and limit.  Let's take care of that
 now while it's fresh.
 
 ## Coding the input<a id="orgheadline5"></a>
 
-Modular input scripts run in three different modes- a schema mode, a validation
+Modular input scripts run in three different modes; a schema mode, a validation
 mode, and a run mode. The schema mode allows us to offer our end users a more
-hospitable environment for specifying the values that we need to retrieve data.
+hospitable environment for specifying the values that we need to retrieve data. <<RBC: The pronouns here may be confusing to the reader. Are you referring to Splunk end users (devs) or do you mean the end users of the apps that devs will write using this scrimmage?>>
 For this scrimmage we are going to be using the [Splunk Python SDK](http://dev.splunk.com/python), which gives
 us an easy structure for implementing all of these modes. It's pretty simple to
-do this in any language- you may just need to handle the command-line parsing
+do this in any language, you may just need to handle the command-line parsing
 and XML yourself.
 
 When using the Python SDK, we create a subclass of
 `splunklib.modularinput.Script` and override methods corresponding to the
-different stages. To specify more detail on the values we expect, let's start by
+different stages. To specify more detail on the values we expect, we will start by
 overriding the `get_scheme` method.
 
-Splunk looks for a modular input script to have a name matching 
+Splunk Enterprise looks for a modular input script to have a name that matches: 
 
     from splunklib import modularinput
     class SocrataFeed(modularinput.Script):
@@ -125,21 +123,21 @@ Splunk looks for a modular input script to have a name matching
     
             return scheme
 
-Each arg (in this case `url`) gets the same treatment- we specify a data type, a
+Each arg (in this case `url`) gets the same treatment. We specify a data type, a
 description, and whether or not the argument is required when the input is
-created. With this information, Splunk can provide an informative GUI for
+created. With this information, Splunk Enterprise can provide an informative GUI for
 creating new inputs.
 
-Next we need to figure out checkpointing, since that's a core piece of our
+Next we need to figure out checkpointing since that is a core piece of our
 design. When our script is run to pull data the `stream_events` method will
-be called with two arguments- a `config` object and an `EventWriter`. Each
-app is allocated a working directory- we are given the location of that 
-directory in `config.metadata["checkpoint_dir"]`.
+be called with two arguments, a `config` object and an `EventWriter`. Each
+app is allocated a working directory,  <<RBC: Is it given or is it just there?>> the location of that 
+directory is in `config.metadata["checkpoint_dir"]`.
 
-Since we just have a directory, let's build a quick class to abstract
-serializing our checkpoints, remembering that there may well be multiple
-inputs to save checkpoints for. With that in mind, let's build for Python's
-`with` statement and save our data in a dbm file.
+Since we just have a directory, we will build a quick class to abstract
+serializing our checkpoints, remembering that there may be multiple
+inputs to save checkpoints for. With that in mind, we will build for Python's
+`with` statement and save our data in a dbm <<RBC: should we define this? When I search for "dbm" nothing pops up in the Splunk docs. >>file.
 
     class CheckpointDB:
         def __init__(self, dir, file="checkpoints.db"):
@@ -161,7 +159,7 @@ inputs to save checkpoints for. With that in mind, let's build for Python's
         def set_checkpoint(self, key, new_checkpoint):
             self.db[key] = new_checkpoint
 
-Now that we have that in place, it's time to actually fetch data. Start by
+Now that we have that in place, it is time to actually fetch data. Start by
 overriding the `stream_events` method.
 
     def stream_events(self, config, ew):
@@ -180,21 +178,21 @@ overriding the `stream_events` method.
                 ew.log(EventWriter.INFO, "Making request to Socrata for input {} since {}".format(input_name, checkpoint_date))
 
 We have a few things to point out here. First, we are using our `CheckpointDB`
-class in that first statement- now we have an object that we can get and set
-values on, knowing that they will be persisted even if Splunk restarts.
+class in that first statement. Now we have an object that we can get and set
+values on, knowing that they will be persisted even if Splunk Enterprise restarts.
 
-Next, we may get multiple inputs to fetch all at once- we specify whether or not
+Next, we may get multiple inputs to fetch all at once. We specify whether or not
 we get multiple inputs in one instantiation with `scheme.use_single_instance`
-when we override `get_scheme`, but it's always going to show up as a dictionary
+when we override `get_scheme`, but it is always going to show up as a dictionary
 in `config.inputs` whether we get one or many.
 
-Next we pull values from `input_item`- these are the arguments we put
+Then we pull values from `input_item`, these are the arguments we put
 definitions for in `inputs.conf.spec` and specified values for in 
-`inputs.conf` (or supplied in the Splunk UI).
+`inputs.conf` (or supplied in the Splunk Enterprise UI).
 
-Finally we make a log entry for debugging, giving us information on how our
+Finally, we make a log entry for debugging, giving us information on how our
 script is running. Using `EventWriter.log` means that your logging statements
-will be ingested by Splunk too- look in `_internal` index under the
+will be ingested by Splunk Enterprise too, look in `_internal` index under the
 `splunkd.log` source. By default log levels under `EventWriter.INFO` will be
 discarded.
 
@@ -211,21 +209,21 @@ Starting from where we left off in the listing above:
     if new_checkpoint < datestring:
         new_checkpoint = datestring
 
-Here we fetch a window of data, and for each element build events.  We have 
-Put the actual fetch into it's own method, and we will get to it soon.
+Here we fetch a window <<RBC: would "batch" be a better word here?>> of data, and for each element build events. We have 
+Put <<RBC: Capitalization correct here?>> the actual fetch <<RBC: So you mean how the fetching task will work, not the results of that fetch, correct? This is probably one of those dev speak things that will make sense to the audience, or not.>> into it's own method, and we will get to it soon.
 
-We start with pulling the date- remember, `date_field` contains the name of the
+We start with pulling the date, remember, `date_field` contains the name of the
 date as specified in the input. We pull that field, parse it from Socrata's date
 format into a Python `datetime` and from there into a `time` object to be set on
 our new event.
 
-Next we set the `stanza` on the `Event`. This corresponds to the `source` in
-Splunk. Then we serialize the whole object into JSON and set it as the `data`
-attribute.  Splunk handles JSON data extraordinarily well, using keys as event
-attributes- it even handles nested keys well, so JSON is a great choice for 
+Next, we set the `stanza` on the `Event`. This corresponds to the `source` in
+Splunk Enterprise. Then we serialize the whole object into JSON and set it as the `data`
+attribute.  Splunk Enterprise handles JSON data extraordinarily well, using keys as event
+attributes. It even handles nested keys well, so JSON is a great choice for 
 an event format.
 
-Finally we write the event (under the covers it's just getting written to 
+Finally, we write the event (under the covers it's just getting written to 
 `STDOUT`), and if the `datestring` on this event is greater than the date in 
 our `new_checkpoint` object, we set `new_checkpoint` to that date.  
 
@@ -256,41 +254,41 @@ The actual data fetch is pretty straightforward:
 This is just formatting the URL, making a request using `requests.get`, and then
 parsing the response with `json.loads`, yielding each object.
 
-## Validating the data<a id="orgheadline6"></a>
+## Validating the data<a id="orgheadline6"></a> <<RBC: Not sure what value this heading adds. You're not discussing validating the data. It seems like we could delete this and just have the following as a paragraph after the above. Unless you plan to write more here?>>
 
-With that, we should be able to get data from Socrata. Let's play around with it 
-a little bit.
+With that, we should be able to get data from Socrata. We can play around with it 
+a little bit. 
 
-# Making the Map<a id="orgheadline20"></a>
+# Making the map<a id="orgheadline20"></a>
 
 Now that we have data flowing, it's time to take a look at our visualization.
 There are two visualizations known as 'heatmaps'.  The first is a matrix plot
 that uses color to encode the correspondence of two categorical variables. This 
-type of heatmap is a native visualization as of Splunk 6.4.  
+type of heatmap is a native visualization as of Splunk Enterprise 6.4.  
 
 The type of heatmap we want to play with is a map type where the geographic
 frequency of an event is highlighted in color. The [Leaflet](http://leafletjs.com/) mapping library has
-a heatmap plugin named [Leaflet.heat](https://github.com/Leaflet/Leaflet.heat)- we will use that.  
+a heatmap plugin named [Leaflet.heat](https://github.com/Leaflet/Leaflet.heat), we will use that.  
 
-## Registering the visualization with Splunk<a id="orgheadline8"></a>
+## Registering the visualization with Splunk Enterprise<a id="orgheadline8"></a>
 
-Our first step is telling Splunk that we have a new visualization. We do this
+Our first step is telling Splunk Enterprise that we have a new visualization. We do this
 in visualizations.conf:
 
 \#+INCLUDE code python ./firefire/default/visualizations.conf
 
 The name of the stanza is going to point to where we place files for our
-visualization. In our case, Splunk will look in
-`appserver/static/visualizations/geoheatmap`. Specifically it's going to
-load two files in that directory- `visualization.js` and `visualization.css`.
+visualization. In our case, Splunk Enterprise will look in
+`appserver/static/visualizations/geoheatmap`. Specifically it is going to
+load two files in that directory, `visualization.js` and `visualization.css`.
 
 ## Getting the libraries we need<a id="orgheadline9"></a>
 
 The template in the [Custom Visualization Tutorial](http://docs.splunk.com/Documentation/Splunk/6.4.0/AdvancedDev/CustomVizTutorial) sets up a great build 
-system to use for your visualization.  It uses both [npm](https://www.npmjs.com/) and [webpack](https://webpack.github.io/)- 
+system to use for your visualization.  It uses both [npm](https://www.npmjs.com/) and [webpack](https://webpack.github.io/), <<RBC: When I go to this link I just see a message to fork me on github, maybe we want to send them directly here: https://github.com/webpack/webpack. I was checking to see if it needed to be capitalized.>>
 npm to obtain the libraries to use, and webpack to compile it all into
 a single library that can be loaded when the visualization is to be 
-rendered.
+rendered. <<RBC: "is ready to be rendered" or "is rendered"? It feels like there's either a word missing or too many words here. But it may be fine from a dev perspective.>>
 
 First, let's specify our dependencies.  In `package.json`, add leaflet 
 and leaflet.heat to the `dependencies` section.
@@ -318,28 +316,28 @@ In the `module.exports` structure we add the following:
         ]
     },
 
-This configures a dependency for the leaflet.heat library on leaflet, 
-and sets `L` up to be the leaflet library as expected.
+This configures a dependency for the Leaflet.heat <<RBC: It looks like the creators of this cap it.>> library on Leaflet, 
+and sets `L` up to be the Leaflet library as expected.
 
 At this point we should be able to run `npm install` at the command
 line, then `npm build` to compile all of the files in the `src` 
 subdirectory into a `visualization.js`.
 
-## Configuring Splunk for visualization development<a id="orgheadline10"></a>
+## Configuring Splunk Enterprise for visualization development<a id="orgheadline10"></a>
 
-Before we get too far into the code for the visualization, let's set Splunk
+Before we get too far into the code for the visualization, we should set Splunk Enterprise
 up to make it easy to see changes as we make them. We want to change `web.conf`,
 so we put the following into `${SPLUNK_HOME}/etc/system/local`:
 
 \#+INCLUDE example ./splunk-etc/system/local/web.conf
 
-These settings disable minification of the Javascript code (so we can read and
+These settings disable minification of the JavaScript code (so we can read and
 debug) and disable caching so that we see our changes as soon as we reload our
-browsers.  Both make working in Javascript in Splunk <span class="underline">much</span> easier.
+browsers. Both make working in JavaScript in Splunk Enterprise <span class="underline">much</span> easier.
 
-## Including css<a id="orgheadline11"></a>
+## Including CSS<a id="orgheadline11"></a> <<RBC: Again, I don't think this heading is necessary.>>
 
-Next we need to add Leaflet's CSS to our visualization.
+Next, we need to add Leaflet's CSS to our visualization. <<RBC: This text can just follow the last para in the preceding section.>>
 
 ## Setting up the visualization object<a id="orgheadline12"></a>
 
@@ -364,14 +362,14 @@ the libraries into our visualization's context using `require.js`.
         ) {
     })
 
-We request access to leaflet and leaflet.heat in the first argument to `define`.
-The second argument is a function- each argument to the function corresponds to 
-a requested library in the first argument list.  We don't use `leaflet_heat` 
-directly- it gets added to the `L` argument using the webpack configuration we
+We request access to Leaflet and Leaflet.heat in the first argument to `define`.
+The second argument is a function, each argument to the function corresponds to 
+a requested library in the first argument list.  We don't use `Leaflet_heat` 
+directly, it gets added to the `L` argument using the webpack configuration we
 created above.
 
 Now that we have a context, we can build our visualization.  As with the modular
-input, visualizations are specified with a Template Method design pattern- we 
+input, visualizations are specified with a Template Method design pattern. We 
 override an object and implement methods that correspond to steps in a process.
 
     return SplunkVisualizationBase.extend({
@@ -384,14 +382,14 @@ override an object and implement methods that correspond to steps in a process.
 
 We start with overriding the `initialize` method. Calling
 `prototype.initialize.apply` ensures that all superclass initialization happens
-(always a good practice).  We then create a jQuery selection of our visualization's
-DOM node.  We then clear whatever is in that node's contents, and add a class that
+(always a good practice). <<RBC: Since this is basic guidance maybe add a note about why thisis so?>> We then create a jQuery selection of our visualization's
+document object model (DOM) node. Then we clear whatever is in that node's contents, and add a class that
 we can use for CSS selections.
 
-## Shaping the Data<a id="orgheadline13"></a>
+## Shaping the data<a id="orgheadline13"></a>
 
-Next let's override the `formatData` method and use it to transform search results
-into a form that will be easy to feed into `leaflet.heat`.
+Next we override the `formatData` method and use it to transform search results
+into a form that will be easy to feed into `Leaflet.heat`.
 
     formatData: function(data) {
         var fields = {};
@@ -409,19 +407,19 @@ into a form that will be easy to feed into `leaflet.heat`.
 This method gets called whenever search data arrives- it may come in multiple
 times as preview results arrive or the user changes her search.
 
-Reading the [documentation](https://github.com/Leaflet/Leaflet.heat/blob/gh-pages/README.md) for leaflet.heat, `setLatLngs` appears to be the
-most appropriate call to add points to the heatmap layer.  That call takes
-a list of three-element lists- a latitude, a longitude and an intensity.
+Reading the [documentation](https://github.com/Leaflet/Leaflet.heat/blob/gh-pages/README.md) for Leaflet.heat, `setLatLngs` appears to be the
+most appropriate call to add points to the heatmap layer. That call takes
+a list of three-element lists; a latitude, a longitude, and an intensity. <<RBC: Hmmm, I'm confused is it a lists of lists or a list of three elements or?>>
 
-We want the intensity to be equal for each point, so we can hard-code that
-value. To supply the format we need, we can simply map through the data supplied
+We want the intensity to be equal for each point, so we can hard code that
+value. To supply the format we need, we can simply map the data supplied
 to `formatData` by the search and return a list in the proper format. Finally we
 filter on the data, ensuring that we have a latitude and longitude for each 
-data point- it's possible that the data is missing or malformed for some events.
+data point. It is possible that the data will be missing or malformed for some events.
 
 ## Adding the map<a id="orgheadline14"></a>
 
-Next we render the map.  We do this by overriding the `updateView` method.
+Next, we render the map.  We do this by overriding the `updateView` method.
 
     updateView: function(data, config) {
         var basemap_url = 'http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
@@ -436,13 +434,13 @@ Next we render the map.  We do this by overriding the `updateView` method.
             }).addTo(this.map);
         }
 
-If the map doesn't exist, create it with `L.map`, and set the viewport. We also
-need a basemap, so add a `tileLayer`- we are using CartoDB's 'positron' tileset
+If the map doesn't exist, create it with `L.map`, and set the viewport. <<RBC: Do we need to explain how to set the viewport? Same comment for the next step.>> We also
+need a basemap, so add a `tileLayer`, we are using CartoDB's 'positron' tileset
 to start with.
 
 ## Adding blobs<a id="orgheadline15"></a>
 
-Next let's add the heatmap layer.
+Then we add the heatmap layer.
 
     if (!this.heatLayer) {
         this.heatLayer = L.heatLayer([]);
@@ -451,36 +449,36 @@ Next let's add the heatmap layer.
     this.heatLayer.setLatLngs(data);
 
 Again, `updateView` may be called multiple times as results come in and the
-search is changed, so we want to ensure that we only add the heatLayer the 
+search is changed, so we want to ensure that we only add the heatLayer <<RBC: monospace?>> the 
 first time the method is run.  We then call `setLatLngs` on the heatmap layer
 every time we get new data.
 
 ## Resizing the view<a id="orgheadline16"></a>
 
-Now we are building the view, but we have one more override to take care of- we
-need to handle resizing events. Happily this is pretty easy.
+Now we are building the view, but we have one more override to take care of, we
+need to handle resizing events. Happily, this is pretty easy.
 
     reflow: function() {
         this.map.invalidateSize(false);
     }
 
-The Splunk UI will call `reflow` any time the viewport changes, so we can
-isolate all of our resizing logic here. For Leaflet, this is really easy- 
+The Splunk Enterprise UI will call `reflow` any time the viewport changes, so we can
+isolate all of our resizing logic here. For Leaflet, this is really easy,
 we just need to call `invalidateSize` on the map.  The `false` argument is
 simply to tell Leaflet that we don't want to animate the sizing.
 
 ## Customizing the map<a id="orgheadline17"></a>
 
-Our heatmap should now display. Try it out by running a search- [try](http://localhost:18000/en-US/app/firefire/search?q=search%2520source%253D%2522socrata_feed%253A%252F%252Fseattle_fire_response%2522%2520%257C%2520table%2520latitude%252C%2520longitude&display.page.search.mode=smart&dispatch.sample_ratio=1&earliest=-7d%2540h&latest=now&display.page.search.tab=visualizations&display.general.type=visualizations&display.visualizations.type=custom&display.visualizations.custom.type=firefire.geoheatmap&display.visualizations.custom.height=767&sid=1462909528.21)
+Our heatmap should now display. Try it out by running a search, [try](http://localhost:18000/en-US/app/firefire/search?q=search%2520source%253D%2522socrata_feed%253A%252F%252Fseattle_fire_response%2522%2520%257C%2520table%2520latitude%252C%2520longitude&display.page.search.mode=smart&dispatch.sample_ratio=1&earliest=-7d%2540h&latest=now&display.page.search.tab=visualizations&display.general.type=visualizations&display.visualizations.type=custom&display.visualizations.custom.type=firefire.geoheatmap&display.visualizations.custom.height=767&sid=1462909528.21)
 `source="socrata_feed://seattle_fire_response" | table latitude, longitude`
 with the 'Last 7 days' selected in the time picker.
 
 Now we have a heatmap working. This is probably good enough for an internal app,
 but heatmaps are very sensitive to the amount of data they are displaying. Too
 much data and you get only the maximum color levels. Too little and the
-visualization isn't visible above the base map.
+visualization isn't distinguishable from the base map.
 
-To allow users of our visualization to set these properties, let's create a 
+To allow users of our visualization to set these properties, we can create a 
 'Format' menu for our visualization.  We do this using an HTML file named
 `formatter.html` in the visualization directory.
 
@@ -503,7 +501,7 @@ To allow users of our visualization to set these properties, let's create a
     </form>
 
 The values of each of these settings are going to be supplied as keys in the
-`config` argument to `updateView`.  It's a best practice to namespace your 
+`config` argument to `updateView`.  It is a best practice to namespace  <<RBC: pretty sure this word shouldn't be used this way!>> your 
 arguments to ensure that you don't conflict with any existing (or future!)
 visualizations. 
 
